@@ -62,14 +62,22 @@ def emit_flood(event, time, sink)
         "metadata": event.to_json
     }
 
+    puts "data: #{data}"
+
     @logger.info("Sending message to #{sink}")
     r = HTTParty.post(sink, 
-        :headers => {'Content-Type' => 'application/json'},
-        :body => event.to_json
+        :headers => {
+            'Content-Type' => 'text/plain',
+            'ce-specversion' => '0.2',
+            'ce-type' => 'dev.knative.naturalevent.flood',
+            'ce-source' => 'dev.knative.flood'
+        },
+        :body => data.to_json
     )
 
-    if r.code != 200
-        @logger.error("Error! #{r}")
+    if r.code != 200 or r.code != 202
+        @logger.error("Error! #{r.code} - #{r}")
+        @logger.error("Body: #{r.body}")
     end
 end
 
