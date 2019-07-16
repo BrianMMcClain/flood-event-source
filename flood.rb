@@ -16,9 +16,15 @@ def poll_floods(lastTime, sink)
     lastTimePoll = lastTime
 
     j["sites"].each do |site|
-        # Filter out random null events
-        if site["flow_dt"] != "0000-00-00 00:00:00"
-            dt = parse_datetime(site["flow_dt"], site["tz_cd"])
+        if site["flow"].to_f > 500.0 # Tone down the number of events we're generating until the API is fixed
+            # Filter out random null events
+            dt = nil
+            if site["stage_dt"] == "0000-00-00 00:00:00"
+                dt = DateTime.now
+            else
+                dt = parse_datetime(site["stage_dt"], site["tz_cd"])
+            end
+            puts "Comparing #{dt} to #{lastTime}"
             if dt > lastTime
                 # New event!
                 emit_flood(site, dt, sink)
@@ -58,7 +64,8 @@ def emit_flood(event, time, sink)
         "type": "flood",
         "lat": event["dec_lat_va"],
         "long": event["dec_long_va"],
-        "measure": (event["stage"] - event["floodstage"].to_f).round(2),
+        # "measure": (event["stage"] - event["floodstage"].to_f).round(2), # Something's wrong with the API, changing for now until fixed
+        "measure": event["flow"],
         "metadata": event.to_json
     }
 
